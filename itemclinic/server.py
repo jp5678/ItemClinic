@@ -220,7 +220,7 @@ def _field(parts, name: str) -> str:
     return parts[name].value.strip() if name in parts else ""
 
 
-SEMESTER_SHORT = {"1학기": "1", "2학기": "2", "여름학기": "여름", "겨울학기": "겨울"}
+SEMESTER_SHORT = {"1학기": "1", "2학기": "2"}
 
 
 def _term_prefix(year: str, semester: str) -> str:

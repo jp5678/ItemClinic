@@ -60,12 +60,25 @@ class TestServer:
         assert "진단평가" in body and "기말고사" in body
 
     def test_upload_page_has_term_dropdowns(self, server):
+        import datetime
+
         status, body = request(server, "GET", "/")
         assert status == 200
         assert 'name="year"' in body and "학년도</option>" in body
         assert 'name="semester"' in body
-        for sem in ("1학기", "2학기", "여름학기", "겨울학기"):
-            assert sem in body
+        assert "1학기" in body and "2학기" in body
+        assert "여름학기" not in body and "겨울학기" not in body
+        year = datetime.date.today().year
+        # 현재 년도 기준 2년 전 ~ 2년 후만 표시
+        for y in range(year - 2, year + 3):
+            assert f"{y}학년도" in body
+        assert f"{year - 3}학년도" not in body
+        assert f"{year + 3}학년도" not in body
+
+    def test_upload_page_system_title(self, server):
+        status, body = request(server, "GET", "/")
+        assert status == 200
+        assert "시험 문항 자동 분석 및 불량문항 진단 시스템" in body
 
     def test_term_prefix_composed_into_exam_id(self, server, tmp_path):
         body = multipart_body(

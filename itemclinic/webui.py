@@ -6,7 +6,8 @@ import html
 
 from .profiles import EXAM_TYPES
 
-SEMESTERS = ("1학기", "2학기", "여름학기", "겨울학기")
+SEMESTERS = ("1학기", "2학기")
+SYSTEM_TITLE = "시험 문항 자동 분석 및 불량문항 진단 시스템"
 
 
 def _default_semester(month: int) -> str:
@@ -30,7 +31,8 @@ main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 
       background:linear-gradient(160deg,#2e7cb8,#1b5a8c);display:flex;
       align-items:center;justify-content:center;
       box-shadow:0 8px 20px rgba(23,74,119,.25),0 0 0 8px #e9f2fb}
-h1{font-size:1.45rem;text-align:center;margin:0 0 6px;color:var(--primary-dark)}
+h1{font-size:1.28rem;text-align:center;margin:0 0 6px;color:var(--primary-dark);
+   word-break:keep-all;line-height:1.4}
 .sub{text-align:center;color:var(--muted);font-size:.92rem;margin:0 0 26px}
 label{display:block;font-weight:700;font-size:.92rem;margin:16px 0 6px}
 input[type=text],select{width:100%;padding:12px 14px;border:1px solid var(--border);
@@ -65,9 +67,10 @@ def upload_page(footer: str) -> str:
         f'{html.escape(p.description)}</option>'
         for name, p in EXAM_TYPES.items()
     )
+    # 현재 년도 기준 2년 전 ~ 2년 후
     year_options = "".join(
         f'<option value="{y}"{" selected" if y == now.year else ""}>{y}학년도</option>'
-        for y in range(now.year - 2, now.year + 2)
+        for y in range(now.year - 2, now.year + 3)
     )
     default_sem = _default_semester(now.month)
     semester_options = "".join(
@@ -77,11 +80,11 @@ def upload_page(footer: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ItemClinic — 문항분석</title><style>{PAGE_CSS}</style></head>
+<title>{SYSTEM_TITLE}</title><style>{PAGE_CSS}</style></head>
 <body><main><div class="card">
 <div class="icon">{ICON_SVG}</div>
-<h1>문항분석 업로드</h1>
-<p class="sub">시험 결과 자동 분석 및 불량문항 진단 시스템</p>
+<h1>{SYSTEM_TITLE}</h1>
+<p class="sub">ItemClinic — 결과 파일을 업로드하면 자동으로 분석합니다</p>
 <form action="/analyze" method="post" enctype="multipart/form-data">
 <div class="row2">
 <div><label>학년도</label>
@@ -134,7 +137,7 @@ def error_page(message: str, footer: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ItemClinic — 오류</title><style>{PAGE_CSS}</style></head>
+<title>{SYSTEM_TITLE}</title><style>{PAGE_CSS}</style></head>
 <body><main><div class="card">
 <div class="icon">{ICON_SVG}</div>
 <h1>분석 오류</h1>
