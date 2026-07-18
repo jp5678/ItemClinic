@@ -7,7 +7,16 @@
 - **목적**: 객관식 시험 문항분석(고전검사이론) 자동화 — 통계 산출, 불량문항 진단,
   개선 문항 생성, 문항은행 누적
 - **스택**: Python 3.10+ 표준 라이브러리 (엑셀 읽기만 openpyxl, API 생성만 anthropic — 둘 다 선택)
-- **실행 형태**: 로컬 CLI + 로컬 웹 서버(127.0.0.1 전용, `http.server` 기반)
+- **실행 형태 3종**:
+  1. **GitHub Pages 정적 웹** — https://jp5678.github.io/ItemClinic/ (루트 `index.html`
+     단일 파일, 분석 엔진 JS 포팅, 브라우저 내 계산)
+  2. 로컬 웹 서버 — `python3 -m itemclinic serve` (127.0.0.1 전용, `http.server` 기반)
+  3. CLI — `python3 -m itemclinic analyze / bank-search`
+
+<img src="qr-itemclinic.png" alt="배포 페이지 QR" width="150"> ← 배포 페이지 QR
+
+> **이중 구현 주의**: 진단 규칙·프로파일·파서를 수정할 때는 Python(`itemclinic/`)과
+> 정적 웹(`index.html`)을 **양쪽 모두** 고쳐야 한다. 문항은행은 Python 버전에만 있다.
 
 ## 데이터 흐름
 

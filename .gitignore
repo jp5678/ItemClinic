@@ -17,3 +17,6 @@ docs/.bkit-memory.json
 
 # macOS
 .DS_Store
+
+# 로컬 개발 설정
+.claude/
