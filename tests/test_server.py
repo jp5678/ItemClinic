@@ -56,7 +56,7 @@ class TestServer:
     def test_upload_page(self, server):
         status, body = request(server, "GET", "/")
         assert status == 200
-        assert "문항분석" in body
+        assert "시험 문항 자동 분석 및 불량문항 진단 시스템" in body
         assert "진단평가" in body and "기말고사" in body
 
     def test_upload_page_has_term_dropdowns(self, server):
