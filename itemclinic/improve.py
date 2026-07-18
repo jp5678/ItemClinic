@@ -158,7 +158,11 @@ def generate_improvements(
         )
         return "".join(b.text for b in response.content if getattr(b, "type", "") == "text")
     except Exception as exc:  # API 오류는 폴백으로 처리하되 사유를 남긴다
-        raise RuntimeError(f"Claude API 호출에 실패했습니다: {exc}") from exc
+        detail = str(exc)
+        if "authentication" in detail or "invalid" in detail.lower():
+            detail += (" — console.anthropic.com에서 발급한 API 키인지 확인하세요. "
+                       "claude.ai 로그인·구독과는 별개입니다.")
+        raise RuntimeError(f"Claude API 호출에 실패했습니다: {detail}") from exc
 
 
 def select_flagged(items: Sequence[ItemResult], min_severity: Severity = Severity.WARNING):
