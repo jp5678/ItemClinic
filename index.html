@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>시험 문항 자동 분석 및 불량문항 진단 시스템</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{--bg1:#cde1f3;--bg2:#e9f2fb;--card:#f7fbfe;--primary:#1e5b8d;
+--primary-dark:#174a77;--text:#173f66;--muted:#5b7ea0;--border:#c9def0;--soft:#e3eef9}
+*{box-sizing:border-box}
+body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;margin:0;color:var(--text);
+ line-height:1.6;min-height:100vh;display:flex;flex-direction:column;
+ background:radial-gradient(1000px 600px at 15% 10%,var(--bg2),transparent 60%),
+            radial-gradient(900px 700px at 90% 90%,var(--bg2),transparent 55%),var(--bg1)}
+main{flex:1;padding:40px 16px;display:flex;flex-direction:column;align-items:center}
+.card{background:var(--card);border-radius:22px;padding:40px 44px;width:100%;max-width:520px;
+ box-shadow:0 18px 50px rgba(23,74,119,.18)}
+.icon{width:76px;height:76px;margin:0 auto 18px;border-radius:20px;
+ background:linear-gradient(160deg,#2e7cb8,#1b5a8c);display:flex;align-items:center;
+ justify-content:center;box-shadow:0 8px 20px rgba(23,74,119,.25),0 0 0 8px #e9f2fb}
+h1{font-size:1.28rem;text-align:center;margin:0 0 6px;color:var(--primary-dark);
+ word-break:keep-all;line-height:1.4}
+.sub{text-align:center;color:var(--muted);font-size:.92rem;margin:0 0 26px}
+label{display:block;font-weight:700;font-size:.92rem;margin:16px 0 6px}
+input[type=text],input[type=password],select{width:100%;padding:12px 14px;
+ border:1px solid var(--border);border-radius:10px;font-size:1rem;background:#fff;color:var(--text)}
+input[type=file]{width:100%;padding:10px;border:1px dashed var(--border);border-radius:10px;
+ background:#fff;font-size:.9rem}
+button.primary{width:100%;margin-top:26px;padding:15px;border:none;border-radius:12px;
+ background:var(--primary);color:#fff;font-size:1.1rem;font-weight:700;cursor:pointer}
+button.primary:hover{background:var(--primary-dark)}
+.hint{color:var(--muted);font-size:.8rem;margin:4px 0 0}
+.row2{display:flex;gap:12px}.row2>div{flex:1}
+footer{background:var(--soft);color:var(--primary);text-align:center;padding:12px;font-size:.9rem}
+/* ---- 리포트 ---- */
+#result{width:100%;max-width:960px;margin-top:34px;display:none}
+.hero{background:var(--card);border-radius:18px;padding:28px 32px;
+ box-shadow:0 10px 30px rgba(23,74,119,.12);margin-bottom:24px}
+h2{font-size:1.2rem;margin-top:36px;color:var(--primary-dark)}
+.r-title{font-size:1.55rem;margin:0 0 4px;color:var(--primary-dark);font-weight:700}
+.exam-name{font-size:1.05rem;font-weight:700;color:var(--primary);margin:0 0 4px}
+.meta{color:var(--muted);font-size:.9rem}
+.chip{display:inline-block;background:var(--soft);color:var(--primary);border:1px solid var(--border);
+ border-radius:999px;padding:1px 12px;font-size:.8rem;font-weight:700;vertical-align:middle;margin-left:8px}
+.cards{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0 6px}
+.scard{background:#fff;border:1px solid var(--border);border-radius:12px;padding:14px 18px;
+ min-width:120px;box-shadow:0 3px 10px rgba(23,74,119,.06)}
+.scard .v{font-size:1.5rem;font-weight:700;color:var(--primary)}
+.scard .k{font-size:.8rem;color:var(--muted)}
+table{border-collapse:collapse;width:100%;background:#fff;font-size:.9rem}
+th,td{border:1px solid var(--border);padding:6px 10px;text-align:center}
+th{background:var(--soft);color:var(--primary-dark)}
+.item{background:var(--card);border:1px solid var(--border);border-radius:14px;
+ padding:18px 22px;margin:16px 0;box-shadow:0 6px 18px rgba(23,74,119,.08)}
+.item h3{margin:0 0 6px;color:var(--primary-dark)}
+.badge{display:inline-block;border-radius:999px;color:#fff;padding:2px 12px;font-size:.8rem;
+ font-weight:700;margin-left:8px}
+.flag{margin:8px 0;padding:10px 12px;border-radius:8px;background:#faeceb;font-size:.9rem}
+.flag.warn{background:#faf3e3}.flag.info{background:var(--soft)}
+.overflow{overflow-x:auto}.keyrow{background:#e8f4ec;font-weight:700}
+.rowflex{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.copy-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+ margin-left:10px;vertical-align:middle;cursor:pointer;border:1px solid var(--border);
+ border-radius:8px;background:#fff;color:var(--primary)}
+.copy-btn:hover{background:var(--soft)}.copy-btn.done{color:#1e7a4f;border-color:#1e7a4f}
+.error-box{background:#faeceb;border:1px solid #e5b6b3;border-radius:10px;padding:14px 16px;
+ margin-top:16px;font-size:.95rem;display:none}
+pre{white-space:pre-wrap;font-size:.85rem}
+.footer-note{color:var(--muted);font-size:.85rem;text-align:center;margin-top:40px}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+<div class="icon"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></div>
+<h1>시험 문항 자동 분석 및 불량문항 진단 시스템</h1>
+<p class="sub">ItemClinic — 파일은 이 브라우저 안에서만 분석되며 어디에도 업로드되지 않습니다</p>
+<div class="row2">
+  <div><label>학년도</label><select id="year"></select></div>
+  <div><label>학기</label><select id="semester"><option>1학기</option><option>2학기</option></select></div>
+</div>
+<label>시험 유형</label>
+<select id="examType"></select>
+<label>시험 이름 <span class="hint">(과목명 등 — 학년도·학기가 자동으로 앞에 붙습니다)</span></label>
+<input type="text" id="examName" placeholder="예: 성인간호학 중간고사">
+<label>과목명 <span class="hint">(선택 — 개선 문항 생성에 사용)</span></label>
+<input type="text" id="subject" placeholder="예: 성인간호학">
+<label>응답 파일 (CSV 또는 엑셀)</label>
+<input type="file" id="file" accept=".csv,.xlsx,.xlsm">
+<p class="hint">학교 문항 분석표는 자동 인식 · 학생별 응답은 KEY 행 + 원 응답(A~E) 또는 0/1 행렬</p>
+<label>상단 제외 행 수 <span class="hint">(1~7행 제목 영역이면 7 · 문항 분석표는 자동)</span></label>
+<input type="text" id="skipRows" value="7" inputmode="numeric">
+<label>Claude API 키 <span class="hint">(선택 — 입력 시 개선 문항 자동 생성)</span></label>
+<input type="password" id="apiKey" autocomplete="off" placeholder="sk-ant-...">
+<p class="hint">키는 이 브라우저(localStorage)에만 저장 · 비우면 저장된 키 삭제</p>
+<button class="primary" id="run">분석 시작</button>
+<div class="error-box" id="errorBox"></div>
+</div>
+<div id="result"></div>
+</main>
+<footer>ItemClinic — 문항은행 · 자동 문항분석 엔진 | 청암대학교 간호학과 · 정종필 교수 · imjp5678@scjc.ac.kr</footer>
+<script>
+"use strict";
+/* ============ 시험 유형 프로파일 (profiles.py 포팅) ============ */
+const PROFILES = {
+ "일반":{d:"규준참조 일반 시험",criterion:false,hard:0.20,easy:0.90,poor:0.10,marginal:0.20,alphaGain:true},
+ "중간고사":{d:"규준참조 총괄평가",criterion:false,hard:0.20,easy:0.90,poor:0.10,marginal:0.20,alphaGain:true},
+ "기말고사":{d:"규준참조 총괄평가",criterion:false,hard:0.20,easy:0.90,poor:0.10,marginal:0.20,alphaGain:true},
+ "퀴즈":{d:"규준참조 소형 평가",criterion:false,hard:0.20,easy:0.90,poor:0.10,marginal:0.20,alphaGain:true},
+ "진단평가":{d:"준거참조 — 선수학습 결손 진단 (낮은 정답률 허용)",criterion:true,hard:null,easy:0.95,poor:0.05,marginal:0.15,alphaGain:false},
+ "형성평가":{d:"준거참조 — 완전학습 확인 (높은 정답률 허용)",criterion:true,hard:0.20,easy:null,poor:0.05,marginal:0.15,alphaGain:false},
+};
+const SEV={OK:0,WARNING:1,CRITICAL:2};
+const SEV_LABEL=[["정상","#1e7a4f"],["주의","#b97a1c"],["불량","#c2403a"]];
+const esc=s=>String(s??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
+/* ============ 진단 규칙 (diagnose.py 포팅) ============ */
+function diagnoseItem(st,testKr20,p){
+ const flags=[];
+ const r=st.r;
+ if(r<0) flags.push([SEV.CRITICAL,`변별도가 음수입니다(r=${r.toFixed(2)}). 총점이 높은 학생일수록 오히려 틀리는 문항으로, 정답 오류·중의적 표현·상위권을 함정에 빠뜨리는 매력적 오답 가능성이 큽니다. 폐기 또는 전면 수정을 권합니다.`]);
+ else if(r<p.poor) flags.push([SEV.CRITICAL,`변별도가 매우 낮습니다(r=${r.toFixed(2)} < ${p.poor}). 능력 수준과 무관하게 정답률이 결정되는 문항입니다.`]);
+ else if(r<p.marginal) flags.push([SEV.WARNING,`변별도가 낮은 편입니다(r=${r.toFixed(2)} < ${p.marginal}). 오답지 점검을 권합니다.`]);
+ if(p.hard!==null&&st.p<p.hard) flags.push([SEV.WARNING,`난이도 p=${st.p.toFixed(2)}로 너무 어렵습니다(기준 ${p.hard} 미만). 추측 응답이 섞여 변별력이 떨어질 수 있습니다.`]);
+ if(p.easy!==null&&st.p>p.easy) flags.push([SEV.WARNING,`난이도 p=${st.p.toFixed(2)}로 너무 쉽습니다(기준 ${p.easy} 초과). 변별에 기여하지 못하는 문항입니다.`]);
+ if(p.alphaGain&&st.kr20Del!==null&&st.kr20Del-testKr20>0.005)
+  flags.push([SEV.WARNING,`이 문항을 삭제하면 KR-20이 ${testKr20.toFixed(3)} → ${st.kr20Del.toFixed(3)}으로 상승합니다. 검사 전체 신뢰도를 낮추는 문항입니다.`]);
+ return flags;
+}
+const sevOf=flags=>flags.reduce((m,f)=>Math.max(m,f[0]),SEV.OK);
+
+/* ============ 통계 (stats.py 포팅) ============ */
+const total=row=>row.reduce((a,b)=>a+b,0);
+function popVar(v){const n=v.length;if(!n)return 0;const m=v.reduce((a,b)=>a+b,0)/n;
+ return v.reduce((a,b)=>a+(b-m)*(b-m),0)/n;}
+function pearson(x,y){const n=x.length,mx=x.reduce((a,b)=>a+b,0)/n,my=y.reduce((a,b)=>a+b,0)/n;
+ let c=0,vx=0,vy=0;for(let i=0;i<n;i++){c+=(x[i]-mx)*(y[i]-my);vx+=(x[i]-mx)**2;vy+=(y[i]-my)**2;}
+ return vx===0||vy===0?0:c/Math.sqrt(vx*vy);}
+function kr20(M){const k=M[0].length;if(k<2)return 0;
+ const tv=popVar(M.map(total));if(tv===0)return 0;
+ let pq=0;for(let j=0;j<k;j++){const p=M.reduce((a,r)=>a+r[j],0)/M.length;pq+=p*(1-p);}
+ return (k/(k-1))*(1-pq/tv);}
+function upperLower(M,j,frac=0.27){const order=M.map((r,i)=>i).sort((a,b)=>total(M[b])-total(M[a]));
+ const k=Math.max(1,Math.round(M.length*frac));
+ const up=order.slice(0,k).reduce((a,i)=>a+M[i][j],0)/k;
+ const lo=order.slice(-k).reduce((a,i)=>a+M[i][j],0)/k;return up-lo;}
+function empiricalICC(M,j,g=5){g=Math.min(g,M.length);
+ const order=M.map((r,i)=>i).sort((a,b)=>total(M[a])-total(M[b]));
+ const n=order.length,base=Math.floor(n/g),extra=n%g,curve=[];let s=0;
+ for(let gi=0;gi<g;gi++){const size=base+(gi<extra?1:0);const mem=order.slice(s,s+size);s+=size;
+  curve.push({n:size,p:mem.reduce((a,i)=>a+M[i][j],0)/size});}
+ return curve;}
+
+/* ============ 파일 읽기 ============ */
+function parseCSV(text){const rows=[];let row=[],cell="",inQ=false;
+ text=text.replace(/^﻿/,"");
+ for(let i=0;i<text.length;i++){const ch=text[i];
+  if(inQ){if(ch==='"'){if(text[i+1]==='"'){cell+='"';i++;}else inQ=false;}else cell+=ch;}
+  else if(ch==='"')inQ=true;
+  else if(ch===','){row.push(cell);cell="";}
+  else if(ch==='\n'||ch==='\r'){if(ch==='\r'&&text[i+1]==='\n')i++;row.push(cell);rows.push(row);row=[];cell="";}
+  else cell+=ch;}
+ if(cell!==""||row.length){row.push(cell);rows.push(row);}
+ return rows;}
+function cellStr(v){if(v===null||v===undefined)return"";
+ if(typeof v==="number")return Number.isInteger(v)?String(v):String(v);
+ if(v instanceof Date)return v.toISOString().slice(0,10);
+ return String(v).trim();}
+async function readRows(file){
+ if(/\.(xlsx|xlsm)$/i.test(file.name)){
+  if(typeof XLSX==="undefined")throw new Error("엑셀 라이브러리를 불러오지 못했습니다. 네트워크 연결을 확인하거나 CSV로 저장해 올려 주세요.");
+  const wb=XLSX.read(await file.arrayBuffer(),{cellDates:true});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:""}).map(r=>r.map(cellStr));}
+ if(/\.xls$/i.test(file.name))throw new Error("구형 .xls 형식은 지원하지 않습니다. 엑셀에서 .xlsx로 다른 이름 저장 후 올려 주세요.");
+ return parseCSV(await file.text()).map(r=>r.map(c=>c.trim()));}
+
+/* ============ 문항 분석표(요약) 파싱 (summary.py 포팅) ============ */
+const META_LABELS={"응시학과":"department","응시과목":"subject","시험일자":"examDate",
+ "응시인원":"n","총배점":"totalPoints","전체평균":"mean","표준편차":"sd","정답률":"overallP"};
+const toF=v=>{if(v===""||v==null)return null;const f=parseFloat(String(v).replace(/[%,]/g,""));return isNaN(f)?null:f;};
+function looksLikeSummary(rows){const t=rows.slice(0,15).flat().join(" ");
+ return t.includes("변별도")&&(t.includes("답지반응")||t.includes("문항 분석표"));}
+function parseSummary(rows,profileName){
+ const prof=PROFILES[profileName];
+ let hIdx=-1,cols=null;
+ for(let i=0;i<rows.length;i++){const c=rows[i].map(x=>x.trim());
+  if(!c.some(x=>x.includes("변별도")))continue;
+  const pCol=c.findIndex(x=>x.includes("정답률")),rCol=c.findIndex(x=>x.includes("변별도")),
+   nCol=c.findIndex(x=>x.includes("문항")&&!x.includes("변별"));
+  if(pCol<0||rCol<0||nCol<0)continue;
+  cols={num:nCol,type:c.findIndex(x=>x.includes("유형")),key:c.findIndex(x=>x.replace(/\s/g,"")==="정답"),
+   topWrong:c.findIndex(x=>x.includes("최다오답")),rateStart:c.findIndex(x=>x.includes("답지반응")),
+   p:pCol,r:rCol,diffLabel:c.findIndex(x=>x.replace(/\s/g,"")==="난이도")};
+  hIdx=i;break;}
+ if(hIdx<0)throw new Error("문항 분석표 헤더(문항/정답률/변별도)를 찾지 못했습니다.");
+ // 메타데이터: 라벨 오른쪽의 첫 비어있지 않은 셀
+ const meta={};
+ for(const row of rows.slice(0,hIdx)){const c=row.map(x=>x.trim());
+  c.forEach((cell,i)=>{const f=META_LABELS[cell.replace(/\s/g,"")];
+   if(f&&!(f in meta)){const v=c.slice(i+1).find(x=>x);if(v!==undefined)meta[f]=v;}});}
+ if(meta.overallP!=null){let f=toF(meta.overallP);meta.overallP=f==null?null:(f>1?f/100:f);}
+ // 보조 헤더(1~5) 건너뛰기
+ let dStart=hIdx+1;
+ if(dStart<rows.length){const c=rows[dStart].map(x=>x.trim());
+  const first=c[cols.num]||"",rest=c.filter(x=>x);
+  if(first===""&&rest.length&&rest.every(x=>/^\d$/.test(x)))dStart++;}
+ // 데이터 행 (원시값)
+ const raw=[];
+ for(const row of rows.slice(dStart)){const c=row.map(x=>String(x).trim());
+  const num=c[cols.num]||"";if(!/^\d+$/.test(num))continue;
+  const p=toF(c[cols.p]),r=toF(c[cols.r]);if(p==null||r==null)continue;
+  const rates=[];
+  if(cols.rateStart>=0)for(let k=0;k<5;k++){const v=toF(c[cols.rateStart+k]);if(v!=null)rates.push([String(k+1),v]);}
+  raw.push({num,type:cols.type>=0?c[cols.type]:"",key:cols.key>=0?c[cols.key]:"",
+   topWrong:cols.topWrong>=0?c[cols.topWrong]:"",diffLabel:cols.diffLabel>=0?c[cols.diffLabel]:"",p,r,rates});}
+ if(!raw.length)throw new Error("문항 분석표에서 문항 데이터 행을 찾지 못했습니다.");
+ // 열 단위 %/비율 스케일 판정
+ const pScale=Math.max(...raw.map(v=>v.p))>1?100:1;
+ const allRates=raw.flatMap(v=>v.rates.map(x=>x[1]));
+ const rScale=allRates.length&&Math.max(...allRates)>1?100:1;
+ const items=raw.map(v=>{
+  const p=v.p/pScale,rates=v.rates.map(([o,x])=>[o,x/rScale]);
+  const st={p,r:v.r,ul:null,kr20Del:null};
+  const flags=diagnoseItem(st,0,prof);
+  const rmap=Object.fromEntries(rates);
+  if(v.key&&rates.length){
+   for(const[o,rt]of rates)if(o!==v.key&&rt>(rmap[v.key]??p))
+    flags.push([SEV.CRITICAL,`오답 ${o}번의 선택률(${(rt*100).toFixed(0)}%)이 정답 ${v.key}번(${((rmap[v.key]??p)*100).toFixed(0)}%)보다 높습니다. 정답 오류 또는 강한 중의성이 의심되므로 정답 확인이 필요합니다.`]);
+   const dead=rates.filter(([o,rt])=>o!==v.key&&rt<0.05).map(([o])=>o);
+   if(dead.length)flags.push([SEV.OK,`참고: 선택률 5% 미만으로 기능하지 않는 오답지가 있습니다: ${dead.join(", ")}번. 문항 개정 시 매력도 있는 오답으로 교체를 권합니다.`]);}
+  return{...v,p,rates,st,flags,sev:sevOf(flags)};});
+ return{kind:"summary",meta,items,profileName};}
+
+/* ============ 학생별 응답 파싱 (loader.py 포팅) ============ */
+function parseResponses(rows,skip,profileName){
+ const prof=PROFILES[profileName];
+ let R=rows.slice(skip).filter(r=>r.some(c=>c.trim()));
+ if(R.length<2)throw new Error(`헤더와 데이터 행을 찾을 수 없습니다. 상단 제외 행 수(${skip})가 데이터 위치와 맞는지 확인하세요.`);
+ let header=[...R[0]];while(header.length&&!header[header.length-1].trim())header.pop();
+ if(header.length<2)throw new Error("헤더에 문항 열이 없습니다. 첫 열은 학생 ID, 이후 열은 문항이어야 합니다.");
+ const itemIds=header.slice(1).map(h=>h.trim());
+ const body=R.slice(1).map(r=>{let row=[...r];while(row.length&&!row[row.length-1].trim())row.pop();
+  if(row.length>header.length)throw new Error("데이터 행의 열 수가 헤더보다 많습니다.");
+  while(row.length<header.length)row.push("");return row;});
+ let key=null,data=body;
+ if(body.length&&["key","정답","answer"].includes(body[0][0].trim().toLowerCase())){
+  key=body[0].slice(1).map(c=>c.trim());
+  if(key.some(k=>!k))throw new Error("정답 키 행에 빈 칸이 있습니다.");
+  data=body.slice(1);}
+ if(!data.length)throw new Error("학생 응답 행이 없습니다.");
+ const cells=data.map(r=>r.slice(1).map(c=>c.trim()));
+ let M,raw=null;
+ if(key){raw=cells;
+  M=cells.map(row=>row.map((c,j)=>c!==""&&c.toUpperCase()===key[j].toUpperCase()?1:0));}
+ else{M=cells.map((row,i)=>row.map((c,j)=>{if(c==="")return 0;if(c==="0"||c==="1")return+c;
+  throw new Error(`${i+2}번째 행 ${j+2}번째 열의 값 '${c}'을 해석할 수 없습니다. 원 응답 형식이면 헤더 아래에 KEY 행(정답 키)을 추가하세요.`);}));}
+ const tKr20=kr20(M),k=M[0].length,n=M.length;
+ const totals=M.map(total),mean=totals.reduce((a,b)=>a+b,0)/n;
+ const sd=n>1?Math.sqrt(totals.reduce((a,t)=>a+(t-mean)**2,0)/(n-1)):0;
+ const items=itemIds.map((id,j)=>{
+  const item=M.map(r=>r[j]),rest=M.map(r=>total(r)-r[j]);
+  const st={p:item.reduce((a,b)=>a+b,0)/n,r:pearson(item,rest),ul:upperLower(M,j),
+   kr20Del:k>=3?kr20(M.map(r=>r.filter((_,x)=>x!==j))):null};
+  const flags=diagnoseItem(st,tKr20,prof);
+  let dist=null;
+  if(raw&&key){const order=M.map((r,i)=>i).sort((a,b)=>total(M[b])-total(M[a]));
+   const kk=Math.max(1,Math.round(n*0.27)),up=new Set(order.slice(0,kk)),lo=new Set(order.slice(-kk));
+   const resp=raw.map(r=>r[j].toUpperCase()),correct=key[j].toUpperCase();
+   const opts=[...new Set(resp.filter(x=>x))];if(!opts.includes(correct))opts.push(correct);
+   dist=opts.map(o=>{const chosen=resp.map((x,i)=>x===o?i:-1).filter(i=>i>=0);
+    return{o,isKey:o===correct,all:chosen.length/n,
+     up:chosen.filter(i=>up.has(i)).length/kk,lo:chosen.filter(i=>lo.has(i)).length/kk};})
+    .sort((a,b)=>b.all-a.all);}
+  return{id,st,flags,sev:sevOf(flags),icc:empiricalICC(M,j),dist};});
+ return{kind:"responses",n,k,kr20:tKr20,mean,sd,items,profileName};}
+
+/* ============ SVG ICC ============ */
+function iccSvg(curve,color){const W=320,H=200,L=40,Rr=12,T=14,B=32,pw=W-L-Rr,ph=H-T-B,n=curve.length;
+ const x=i=>L+pw*i/Math.max(1,n-1),y=p=>T+ph*(1-p);
+ const pts=curve.map((g,i)=>`${x(i).toFixed(1)},${y(g.p).toFixed(1)}`).join(" ");
+ let s=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">`;
+ for(const v of[0,0.25,0.5,0.75,1])s+=`<line x1="${L}" y1="${y(v)}" x2="${W-Rr}" y2="${y(v)}" stroke="#e5e7eb"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end" font-size="10" fill="#6b7280">${v.toFixed(1)}</text>`;
+ s+=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"/>`;
+ curve.forEach((g,i)=>{s+=`<circle cx="${x(i)}" cy="${y(g.p)}" r="3.5" fill="${color}"/><text x="${x(i)}" y="${H-B+16}" text-anchor="middle" font-size="10" fill="#6b7280">G${i+1}</text>`;});
+ s+=`<text x="${(L+W-Rr)/2}" y="${H-4}" text-anchor="middle" font-size="10" fill="#6b7280">능력 그룹 (하위 → 상위)</text></svg>`;return s;}
+
+/* ============ 개선 프롬프트 (improve.py 포팅) ============ */
+function buildPrompt(res,examLabel,subject){
+ const flagged=res.items.filter(it=>it.sev>=SEV.WARNING).sort((a,b)=>b.sev-a.sev);
+ if(!flagged.length)return"";
+ const subj=subject?`과목: ${subject}\n`:"";
+ const blocks=flagged.map(it=>{
+  const L=[`### 문항 ${it.id||it.num}`];
+  if(res.kind==="summary"){if(it.type)L.push(`유형(학습목표): ${it.type}`);
+   L.push(`통계: 정답률 p=${it.st.p.toFixed(2)}, 변별도 r=${it.st.r.toFixed(2)}, 난이도 표기=${it.diffLabel||"-"}`);
+   L.push(`정답: ${it.key||"-"}번, 최다오답: ${it.topWrong||"-"}번`);
+   if(it.rates.length)L.push(`답지반응률: ${it.rates.map(([o,r])=>`${o}번 ${(r*100).toFixed(0)}%`).join(", ")}`);}
+  else{L.push("문항 원문: (미제공 — 통계만으로 진단)");
+   L.push(`통계: 난이도 p=${it.st.p.toFixed(2)}, 변별도 r_pb=${it.st.r.toFixed(2)}, 상하위27% D=${it.st.ul.toFixed(2)}${it.st.kr20Del!=null?`, 삭제 시 KR-20=${it.st.kr20Del.toFixed(3)}`:""}`);
+   L.push(`ICC(하위→상위 그룹 정답률): ${it.icc.map(g=>(g.p*100).toFixed(0)+"%").join(" → ")}`);
+   if(it.dist){L.push("선택지 분포 (전체 / 상위27% / 하위27%):");
+    for(const d of it.dist)L.push(`  ${d.o}${d.isKey?" (정답)":""}: ${(d.all*100).toFixed(0)}% / ${(d.up*100).toFixed(0)}% / ${(d.lo*100).toFixed(0)}%`);}}
+  L.push("진단 플래그:");for(const f of it.flags)L.push(`  - ${f[1]}`);
+  return L.join("\n");}).join("\n\n");
+ return `당신은 교육측정 전문가이자 해당 과목의 출제위원입니다.
+아래는 시험 "${examLabel}"에서 통계적으로 불량 판정을 받은 객관식 문항들의 분석 결과입니다.
+${subj}
+각 문항에 대해 다음을 수행하세요.
+
+1. **원인 진단**: 통계 패턴을 근거로 왜 이 문항이 불량인지 해석하세요.
+   (정답 오류 의심 / 중의적 표현 / 상위권을 속이는 오답 / 기능하지 않는 오답지 등)
+2. **수정안**: 원래 문항의 취지를 살린 최소 수정 방향 제안.
+3. **대체 문항**: 같은 학습목표를 재는 새 문항 1개 (문두 + 선택지 5개 + 정답 + 해설).
+4. **오답지 설계 근거**: 각 오답이 어떤 오개념을 잡아내는지 한 줄씩.
+
+목표 통계치: 난이도 0.4~0.7, 변별도 0.30 이상, 모든 오답지 선택률 5% 이상.
+문항 원문이 없으면 유형 텍스트를 학습목표로 삼아 출제하고, 원문 확인 체크리스트를 제시하세요.
+
+---
+
+${blocks}
+`;}
+
+/* ============ Claude API (브라우저 직접 호출) ============ */
+async function callClaude(prompt,apiKey){
+ const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+  headers:{"content-type":"application/json","x-api-key":apiKey,
+   "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+  body:JSON.stringify({model:"claude-sonnet-5",max_tokens:4000,
+   messages:[{role:"user",content:prompt}]})});
+ if(!res.ok){const t=await res.text();throw new Error(`Claude API 호출 실패 (${res.status}): ${t.slice(0,200)}`);}
+ const data=await res.json();
+ return (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");}
+
+/* ============ 리포트 렌더링 ============ */
+function flagHtml(flags){if(!flags.length)return '<p class="meta">특이사항 없음.</p>';
+ return flags.map(f=>`<div class="flag${f[0]===SEV.WARNING?" warn":f[0]===SEV.OK?" info":""}">${esc(f[1])}</div>`).join("");}
+function copyBtn(id){return `<button type="button" class="copy-btn" data-target="${id}" title="복사"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>`;}
+function renderReport(res,examId,examType,prompt,improved,improveError){
+ const now=new Date().toLocaleString("ko-KR");
+ const prof=PROFILES[res.profileName];
+ const flagged=res.items.filter(it=>it.sev!==SEV.OK);
+ let hero,tableHead,rowsHtml,sections;
+ const sorted=[...res.items].sort((a,b)=>b.sev-a.sev);
+ if(res.kind==="summary"){
+  const m=res.meta;
+  const cards=[[m.n,"응시인원"],[m.mean,"전체평균"],[m.sd,"표준편차"],
+   [m.overallP!=null?(m.overallP*100).toFixed(1)+"%":null,"전체 정답률"],[flagged.length,"주의·불량 문항 수"]]
+   .filter(([v])=>v!=null).map(([v,k])=>`<div class="scard"><div class="v">${esc(v)}</div><div class="k">${k}</div></div>`).join("");
+  hero=`<div class="hero"><p class="r-title">문항분석 리포트<span class="chip">${esc(examType)}</span><span class="chip">문항 분석표(요약)</span></p>
+   <p class="exam-name">${esc(examId)}</p>
+   <p class="meta">ItemClinic · 생성 ${now} · ${[m.department,m.subject,m.examDate?"시험일 "+m.examDate:null].filter(Boolean).map(esc).join(" · ")}</p>
+   <div class="cards">${cards}</div>
+   <p class="meta">이 파일은 학생별 원 응답이 아닌 <b>요약 분석표</b>이므로 KR-20 신뢰도와 문항특성곡선(ICC)은 산출하지 않습니다.</p></div>`;
+  tableHead="<tr><th>문항</th><th>유형</th><th>정답</th><th>정답률 p</th><th>변별도</th><th>난이도</th><th>판정</th></tr>";
+  rowsHtml=res.items.map(it=>{const[l,c]=SEV_LABEL[it.sev];
+   return `<tr><td>${esc(it.num)}</td><td style="text-align:left">${esc(it.type||"-")}</td><td>${esc(it.key||"-")}</td><td>${it.p.toFixed(2)}</td><td>${it.st.r.toFixed(2)}</td><td>${esc(it.diffLabel||"-")}</td><td style="color:${c};font-weight:700">${l}</td></tr>`;}).join("");
+  sections=sorted.map(it=>{const[l,c]=SEV_LABEL[it.sev];
+   const bars=it.rates.map(([o,r])=>{const key=o===it.key;
+    return `<tr class="${key?"keyrow":""}"><td>${o}${key?" ✓":""}</td><td>${(r*100).toFixed(1)}%</td><td style="text-align:left;min-width:180px"><div style="background:${key?"#1e5b8d":"#b6cde4"};height:12px;border-radius:6px;width:${Math.max(r*100,1).toFixed(0)}%"></div></td></tr>`;}).join("");
+   return `<div class="item"><h3>${esc(it.num)}번 문항<span class="badge" style="background:${c}">${l}</span></h3>
+    ${it.type?`<p class="meta">유형: ${esc(it.type)}</p>`:""}
+    <p class="meta">정답 ${esc(it.key||"-")}번 · 정답률 p=${it.p.toFixed(2)} · 변별도 r=${it.st.r.toFixed(2)} · 난이도 ${esc(it.diffLabel||"-")} · 최다오답 ${esc(it.topWrong||"-")}번</p>
+    ${flagHtml(it.flags)}
+    ${bars?`<div class="overflow"><table><thead><tr><th>선택지</th><th>반응률</th><th>분포</th></tr></thead><tbody>${bars}</tbody></table></div>`:""}</div>`;}).join("");
+ }else{
+  const krMsg=prof.criterion?"준거참조 검사에서는 점수가 비슷할수록 KR-20이 낮게 나오는 것이 자연스럽습니다. 문항별 도달률과 음의 변별도 문항 유무를 중심으로 해석하세요."
+   :res.kr20>=0.8?"학급 단위 의사결정에 충분한 신뢰도입니다."
+   :res.kr20>=0.7?"수용 가능한 수준이나, 불량 문항 개선 시 더 올릴 수 있습니다."
+   :"낮은 수준입니다. 불량 문항을 수정·삭제하면 개선 여지가 큽니다. (문항 수가 적을수록 KR-20은 낮게 나오는 점도 감안하세요.)";
+  hero=`<div class="hero"><p class="r-title">문항분석 리포트<span class="chip">${esc(examType)}</span></p>
+   <p class="exam-name">${esc(examId)}</p>
+   <p class="meta">ItemClinic · 생성 ${now} · N=${res.n}, ${res.k}문항 · 진단 기준: ${esc(prof.d)}</p>
+   <div class="cards">
+    <div class="scard"><div class="v">${res.kr20.toFixed(3)}</div><div class="k">KR-20 신뢰도</div></div>
+    <div class="scard"><div class="v">${res.mean.toFixed(1)}</div><div class="k">평균 점수</div></div>
+    <div class="scard"><div class="v">${res.sd.toFixed(2)}</div><div class="k">표준편차</div></div>
+    <div class="scard"><div class="v">${flagged.length}</div><div class="k">주의·불량 문항 수</div></div></div>
+   <p class="meta">KR-20 해석: ${krMsg}</p></div>`;
+  tableHead="<tr><th>문항</th><th>난이도 p</th><th>변별도 r<sub>pb</sub></th><th>상하위 D</th><th>삭제 시 KR-20</th><th>판정</th></tr>";
+  rowsHtml=res.items.map(it=>{const[l,c]=SEV_LABEL[it.sev];
+   return `<tr><td>${esc(it.id)}</td><td>${it.st.p.toFixed(2)}</td><td>${it.st.r.toFixed(2)}</td><td>${it.st.ul.toFixed(2)}</td><td>${it.st.kr20Del!=null?it.st.kr20Del.toFixed(3):"-"}</td><td style="color:${c};font-weight:700">${l}</td></tr>`;}).join("");
+  sections=sorted.map(it=>{const[l,c]=SEV_LABEL[it.sev];
+   const lineColor=it.sev===SEV.CRITICAL?"#c2403a":it.sev===SEV.WARNING?"#b97a1c":"#1e5b8d";
+   const dist=it.dist?`<div class="overflow"><table><thead><tr><th>선택지</th><th>전체</th><th>상위 27%</th><th>하위 27%</th></tr></thead><tbody>${
+    it.dist.map(d=>`<tr class="${d.isKey?"keyrow":""}"><td>${esc(d.o)}${d.isKey?" ✓":""}</td><td>${(d.all*100).toFixed(0)}%</td><td>${(d.up*100).toFixed(0)}%</td><td>${(d.lo*100).toFixed(0)}%</td></tr>`).join("")}</tbody></table></div>`:"";
+   return `<div class="item"><h3>${esc(it.id)}<span class="badge" style="background:${c}">${l}</span></h3>
+    <p class="meta">난이도 p=${it.st.p.toFixed(2)} · 변별도 r=${it.st.r.toFixed(2)} · 상하위 D=${it.st.ul.toFixed(2)}${it.st.kr20Del!=null?` · 삭제 시 KR-20=${it.st.kr20Del.toFixed(3)}`:""}</p>
+    ${flagHtml(it.flags)}<div class="rowflex"><div>${iccSvg(it.icc,lineColor)}</div>${dist}</div></div>`;}).join("");
+ }
+ let extras="";
+ if(improved)extras+=`<h2>Claude 개선안 ${copyBtn("ic-improved")}</h2><div class="item"><details open><summary>접기 / 펼치기</summary><pre id="ic-improved">${esc(improved)}</pre></details></div>`;
+ else if(improveError)extras+=`<h2>Claude 개선안</h2><div class="item"><div class="flag warn">자동 생성에 실패했습니다: ${esc(improveError)} 아래 개선 프롬프트를 복사해 Claude에 직접 붙여넣어 주세요.</div></div>`;
+ if(prompt)extras+=`<h2>개선 프롬프트 ${copyBtn("ic-prompt")}</h2><div class="item"><p class="meta">복사해서 Claude(claude.ai)에 붙여넣으면 원인 해석과 대체 문항 초안을 받을 수 있습니다.</p><details><summary>펼쳐 보기</summary><pre id="ic-prompt">${esc(prompt)}</pre></details></div>`;
+ else extras+=`<p class="meta" style="text-align:center">주의·불량 문항이 없어 개선 프롬프트를 생성하지 않았습니다.</p>`;
+ return `${hero}<h2>문항 통계 요약</h2><div class="overflow"><table><thead>${tableHead}</thead><tbody>${rowsHtml}</tbody></table></div>
+  <h2>문항별 상세 진단</h2>${sections}${extras}
+  <p class="footer-note">ItemClinic — 모든 계산은 이 브라우저 안에서 수행되었습니다</p>`;}
+
+/* ============ 폼 초기화·이벤트 ============ */
+(function init(){
+ const y=new Date().getFullYear(),ySel=document.getElementById("year");
+ for(let v=y-2;v<=y+2;v++){const o=document.createElement("option");o.value=v;o.textContent=v+"학년도";if(v===y)o.selected=true;ySel.appendChild(o);}
+ document.getElementById("semester").value=(new Date().getMonth()+1>=2&&new Date().getMonth()+1<=7)?"1학기":"2학기";
+ const tSel=document.getElementById("examType");
+ for(const[name,p]of Object.entries(PROFILES)){const o=document.createElement("option");o.value=name;o.textContent=`${name} — ${p.d}`;tSel.appendChild(o);}
+ try{document.getElementById("apiKey").value=localStorage.getItem("itemclinic_api_key")||"";}catch(e){}
+})();
+function showError(msg){const b=document.getElementById("errorBox");b.textContent="오류: "+msg;b.style.display="block";}
+document.getElementById("run").addEventListener("click",async()=>{
+ const btn=document.getElementById("run"),errBox=document.getElementById("errorBox"),
+  resDiv=document.getElementById("result");
+ errBox.style.display="none";resDiv.style.display="none";
+ try{
+  const file=document.getElementById("file").files[0];
+  if(!file)throw new Error("응답 파일(CSV 또는 엑셀)을 선택해 주세요.");
+  const apiKey=document.getElementById("apiKey").value.trim();
+  try{apiKey?localStorage.setItem("itemclinic_api_key",apiKey):localStorage.removeItem("itemclinic_api_key");}catch(e){}
+  const examType=document.getElementById("examType").value;
+  const name=document.getElementById("examName").value.trim();
+  const subject=document.getElementById("subject").value.trim();
+  const term=`${document.getElementById("year").value}-${document.getElementById("semester").value==="1학기"?"1":"2"}`;
+  const skipRaw=document.getElementById("skipRows").value.trim();
+  const skip=skipRaw===""?7:parseInt(skipRaw,10);
+  if(isNaN(skip)||skip<0)throw new Error(`상단 제외 행 수는 0 이상의 숫자여야 합니다: '${skipRaw}'`);
+  btn.disabled=true;btn.textContent="분석 중...";
+  const rows=await readRows(file);
+  let res,examId;
+  if(looksLikeSummary(rows)){res=parseSummary(rows,examType);
+   examId=name?`${term} ${name}`:(res.meta.subject||"무제시험");}
+  else{res=parseResponses(rows,skip,examType);examId=`${term} ${name||"무제시험"}`;}
+  const prompt=buildPrompt(res,`${examId} (${examType})`,subject||res.meta?.subject||"");
+  let improved="",improveError="";
+  if(prompt&&apiKey){btn.textContent="개선 문항 생성 중... (수십 초 소요)";
+   try{improved=await callClaude(prompt,apiKey);}catch(e){improveError=e.message;}}
+  resDiv.innerHTML=renderReport(res,examId,examType,prompt,improved,improveError);
+  resDiv.style.display="block";
+  resDiv.querySelectorAll(".copy-btn").forEach(b=>{const icon=b.innerHTML;
+   b.addEventListener("click",()=>{const t=document.getElementById(b.dataset.target).textContent;
+    const done=()=>{b.classList.add("done");b.innerHTML="✓";setTimeout(()=>{b.classList.remove("done");b.innerHTML=icon;},1500);};
+    const fb=()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();document.execCommand("copy");a.remove();done();};
+    (navigator.clipboard&&navigator.clipboard.writeText)?navigator.clipboard.writeText(t).then(done).catch(fb):fb();});});
+  resDiv.scrollIntoView({behavior:"smooth"});
+ }catch(e){showError(e.message);}
+ finally{btn.disabled=false;btn.textContent="분석 시작";}
+});
+</script>
+</body>
+</html>
