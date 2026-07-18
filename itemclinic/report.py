@@ -18,7 +18,7 @@ SEVERITY_LABEL = {
     Severity.CRITICAL: ("불량", "#c2403a"),
 }
 
-FOOTER_TEXT = ("ItemClinic — 문항은행 · 자동 문항분석 엔진 | "
+FOOTER_TEXT = ("ItemClinic — 시험 문항 자동 분석 및 불량문항 진단 시스템 | "
                "청암대학교 간호학과 · 정종필 교수 · imjp5678@scjc.ac.kr")
 
 # 첨부된 관리자 시스템과 동일한 블루 팔레트
