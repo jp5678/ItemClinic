@@ -13,15 +13,25 @@ body{font-family:'Apple SD Gothic Neo','Noto Sans KR',sans-serif;margin:0;color:
  line-height:1.6;min-height:100vh;display:flex;flex-direction:column;
  background:radial-gradient(1000px 600px at 15% 10%,var(--bg2),transparent 60%),
             radial-gradient(900px 700px at 90% 90%,var(--bg2),transparent 55%),var(--bg1)}
-main{flex:1;padding:40px 16px;display:flex;flex-direction:column;align-items:center}
-.card{background:var(--card);border-radius:22px;padding:40px 44px;width:100%;max-width:520px;
+main{flex:1;padding:32px 20px}
+.layout{display:flex;gap:24px;max-width:1400px;margin:0 auto;align-items:flex-start}
+.side{background:var(--card);border-radius:18px;padding:28px 30px;width:400px;flex-shrink:0;
+ box-shadow:0 18px 50px rgba(23,74,119,.18);position:sticky;top:24px}
+.side-title{font-size:1.05rem;color:var(--primary-dark);margin:26px 0 2px;
+ padding-bottom:8px;border-bottom:1px solid var(--border)}
+.side-title.first{margin-top:0}
+.right{flex:1;min-width:0}
+.welcome{background:var(--card);border-radius:18px;padding:70px 40px;text-align:center;
  box-shadow:0 18px 50px rgba(23,74,119,.18)}
 .icon{width:76px;height:76px;margin:0 auto 18px;border-radius:20px;
  background:linear-gradient(160deg,#2e7cb8,#1b5a8c);display:flex;align-items:center;
  justify-content:center;box-shadow:0 8px 20px rgba(23,74,119,.25),0 0 0 8px #e9f2fb}
-h1{font-size:1.28rem;text-align:center;margin:0 0 6px;color:var(--primary-dark);
+h1{font-size:1.5rem;text-align:center;margin:0 0 10px;color:var(--primary-dark);
  word-break:keep-all;line-height:1.4}
-.sub{text-align:center;color:var(--muted);font-size:.92rem;margin:0 0 26px}
+.sub{text-align:center;color:var(--muted);font-size:.98rem;margin:0 0 26px;word-break:keep-all}
+.steps{list-style:none;padding:0;margin:26px 0 0;color:var(--muted);font-size:.95rem}
+.steps li{margin:7px 0}
+@media(max-width:960px){.layout{flex-direction:column}.side{width:100%;position:static}}
 label{display:block;font-weight:700;font-size:.92rem;margin:16px 0 6px}
 input[type=text],input[type=password],select{width:100%;padding:12px 14px;
  border:1px solid var(--border);border-radius:10px;font-size:1rem;background:#fff;color:var(--text)}
@@ -34,7 +44,7 @@ button.primary:hover{background:var(--primary-dark)}
 .row2{display:flex;gap:12px}.row2>div{flex:1}
 footer{background:var(--soft);color:var(--primary);text-align:center;padding:12px;font-size:.9rem}
 /* ---- 리포트 ---- */
-#result{width:100%;max-width:960px;margin-top:34px;display:none}
+#result{width:100%;display:none}
 .hero{background:var(--card);border-radius:18px;padding:28px 32px;
  box-shadow:0 10px 30px rgba(23,74,119,.12);margin-bottom:24px}
 h2{font-size:1.2rem;margin-top:36px;color:var(--primary-dark)}
@@ -72,24 +82,24 @@ pre{white-space:pre-wrap;font-size:.85rem}
 </head>
 <body>
 <main>
-<div class="card">
-<div class="icon"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></div>
-<h1>시험 문항 자동 분석 및 불량문항 진단 시스템</h1>
-<p class="sub">ItemClinic — 파일은 이 브라우저 안에서만 분석되며 어디에도 업로드되지 않습니다</p>
+<div class="layout">
+<div class="side">
+<h2 class="side-title first">시험 정보</h2>
 <div class="row2">
   <div><label>학년도</label><select id="year"></select></div>
   <div><label>학기</label><select id="semester"><option>1학기</option><option>2학기</option></select></div>
 </div>
 <label>시험 유형</label>
 <select id="examType"></select>
-<label>시험 이름 <span class="hint">(과목명 등 — 학년도·학기가 자동으로 앞에 붙습니다)</span></label>
-<input type="text" id="examName" placeholder="예: 성인간호학 중간고사">
-<label>과목명 <span class="hint">(선택 — 개선 문항 생성에 사용)</span></label>
+<label>시험 이름 <span class="hint">(학년도·학기가 자동으로 앞에 붙습니다)</span></label>
+<input type="text" id="examName" placeholder="예: 중간고사">
+<label>과목명 <span class="hint">(리포트 제목·개선 문항 생성에 사용)</span></label>
 <input type="text" id="subject" placeholder="예: 성인간호학">
-<label>응답 파일 (CSV 또는 엑셀)</label>
+<h2 class="side-title">파일 업로드</h2>
+<label>응답 파일 (문항분석표: xlsx 또는 csv)</label>
 <input type="file" id="file" accept=".csv,.xlsx,.xlsm">
-<p class="hint">학교 문항 분석표는 자동 인식 · 학생별 응답은 KEY 행 + 원 응답(A~E) 또는 0/1 행렬</p>
-<label>상단 제외 행 수 <span class="hint">(1~7행 제목 영역이면 7 · 문항 분석표는 자동)</span></label>
+<p class="hint">학교 문항분석표는 자동 인식 · 학생별 응답 파일은 KEY 행 + 원 응답(A~E) 또는 0/1 행렬</p>
+<label>상단 제외 행 수 <span class="hint">(1~7행 제목 영역이면 7 · 문항분석표는 자동)</span></label>
 <input type="text" id="skipRows" value="7" inputmode="numeric">
 <label>Claude API 키 <span class="hint">(선택 — 입력 시 개선 문항 자동 생성)</span></label>
 <input type="password" id="apiKey" autocomplete="off" placeholder="sk-ant-...">
@@ -97,7 +107,23 @@ pre{white-space:pre-wrap;font-size:.85rem}
 <button class="primary" id="run">분석 시작</button>
 <div class="error-box" id="errorBox"></div>
 </div>
+<div class="right">
+<div class="welcome" id="welcome">
+<div class="icon"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></div>
+<h1>시험 문항 자동 분석 및 불량문항 진단 시스템</h1>
+<p class="sub">문항분석표 또는 학생별 응답 파일을 업로드하면 난이도·변별도·오답지 분석과
+불량문항 진단, 개선 문항 생성까지 자동으로 수행합니다.<br>
+모든 계산은 이 브라우저 안에서만 이루어지며 파일이 어디에도 업로드되지 않습니다.</p>
+<ol class="steps">
+<li>1. 시험 정보 입력 (선택)</li>
+<li>2. 응답 파일 업로드</li>
+<li>3. 분석 시작 → 리포트 확인</li>
+<li>4. 개선 프롬프트 복사 또는 API 자동 생성</li>
+</ol>
+</div>
 <div id="result"></div>
+</div>
+</div>
 </main>
 <footer>ItemClinic — 시험 문항 자동 분석 및 불량문항 진단 시스템 | 청암대학교 간호학과 · 정종필 교수 · imjp5678@scjc.ac.kr</footer>
 <script>
@@ -338,7 +364,7 @@ async function callClaude(prompt,apiKey){
 function flagHtml(flags){if(!flags.length)return '<p class="meta">특이사항 없음.</p>';
  return flags.map(f=>`<div class="flag${f[0]===SEV.WARNING?" warn":f[0]===SEV.OK?" info":""}">${esc(f[1])}</div>`).join("");}
 function copyBtn(id){return `<button type="button" class="copy-btn" data-target="${id}" title="복사"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>`;}
-function renderReport(res,examId,examType,prompt,improved,improveError){
+function renderReport(res,examId,examType,prompt,improved,improveError,subject){
  const now=new Date().toLocaleString("ko-KR");
  const prof=PROFILES[res.profileName];
  const flagged=res.items.filter(it=>it.sev!==SEV.OK);
@@ -349,9 +375,13 @@ function renderReport(res,examId,examType,prompt,improved,improveError){
   const cards=[[m.n,"응시인원"],[m.mean,"전체평균"],[m.sd,"표준편차"],
    [m.overallP!=null?(m.overallP*100).toFixed(1)+"%":null,"전체 정답률"],[flagged.length,"주의·불량 문항 수"]]
    .filter(([v])=>v!=null).map(([v,k])=>`<div class="scard"><div class="v">${esc(v)}</div><div class="k">${k}</div></div>`).join("");
+  const subjectBit=subject&&!examId.includes(subject)?"과목 "+subject
+   :(!subject&&m.subject&&!examId.includes(m.subject)?"과목 "+m.subject:null);
+  const metaBits=["ItemClinic","생성 "+now,m.department,subjectBit,
+   m.examDate?"시험일 "+m.examDate:null].filter(Boolean);
   hero=`<div class="hero"><p class="r-title">문항분석 리포트<span class="chip">${esc(examType)}</span><span class="chip">문항 분석표(요약)</span></p>
    <p class="exam-name">${esc(examId)}</p>
-   <p class="meta">ItemClinic · 생성 ${now} · ${[m.department,m.subject,m.examDate?"시험일 "+m.examDate:null].filter(Boolean).map(esc).join(" · ")}</p>
+   <p class="meta">${metaBits.map(esc).join(" · ")}</p>
    <div class="cards">${cards}</div>
    <p class="meta">이 파일은 학생별 원 응답이 아닌 <b>요약 분석표</b>이므로 KR-20 신뢰도와 문항특성곡선(ICC)은 산출하지 않습니다.</p></div>`;
   tableHead="<tr><th>문항</th><th>유형</th><th>정답</th><th>정답률 p</th><th>변별도</th><th>난이도</th><th>판정</th></tr>";
@@ -372,7 +402,7 @@ function renderReport(res,examId,examType,prompt,improved,improveError){
    :"낮은 수준입니다. 불량 문항을 수정·삭제하면 개선 여지가 큽니다. (문항 수가 적을수록 KR-20은 낮게 나오는 점도 감안하세요.)";
   hero=`<div class="hero"><p class="r-title">문항분석 리포트<span class="chip">${esc(examType)}</span></p>
    <p class="exam-name">${esc(examId)}</p>
-   <p class="meta">ItemClinic · 생성 ${now} · N=${res.n}, ${res.k}문항 · 진단 기준: ${esc(prof.d)}</p>
+   <p class="meta">${["ItemClinic","생성 "+now,subject&&!examId.includes(subject)?"과목 "+subject:null,`N=${res.n}, ${res.k}문항`,"진단 기준: "+prof.d].filter(Boolean).map(esc).join(" · ")}</p>
    <div class="cards">
     <div class="scard"><div class="v">${res.kr20.toFixed(3)}</div><div class="k">KR-20 신뢰도</div></div>
     <div class="scard"><div class="v">${res.mean.toFixed(1)}</div><div class="k">평균 점수</div></div>
@@ -427,15 +457,19 @@ document.getElementById("run").addEventListener("click",async()=>{
   if(isNaN(skip)||skip<0)throw new Error(`상단 제외 행 수는 0 이상의 숫자여야 합니다: '${skipRaw}'`);
   btn.disabled=true;btn.textContent="분석 중...";
   const rows=await readRows(file);
+  // 시험 이름 = 학년도-학기 + 과목명 + 입력 이름 (과목명이 이름에 이미 있으면 중복 생략)
+  const nameParts=(name&&subject&&name.includes(subject))?[name]:[subject,name].filter(Boolean);
+  const composed=nameParts.length?`${term} ${nameParts.join(" ")}`:"";
   let res,examId;
   if(looksLikeSummary(rows)){res=parseSummary(rows,examType);
-   examId=name?`${term} ${name}`:(res.meta.subject||"무제시험");}
-  else{res=parseResponses(rows,skip,examType);examId=`${term} ${name||"무제시험"}`;}
+   examId=composed||res.meta.subject||"무제시험";}
+  else{res=parseResponses(rows,skip,examType);examId=composed||`${term} 무제시험`;}
   const prompt=buildPrompt(res,`${examId} (${examType})`,subject||res.meta?.subject||"");
   let improved="",improveError="";
   if(prompt&&apiKey){btn.textContent="개선 문항 생성 중... (수십 초 소요)";
    try{improved=await callClaude(prompt,apiKey);}catch(e){improveError=e.message;}}
-  resDiv.innerHTML=renderReport(res,examId,examType,prompt,improved,improveError);
+  resDiv.innerHTML=renderReport(res,examId,examType,prompt,improved,improveError,subject);
+  document.getElementById("welcome").style.display="none";
   resDiv.style.display="block";
   resDiv.querySelectorAll(".copy-btn").forEach(b=>{const icon=b.innerHTML;
    b.addEventListener("click",()=>{const t=document.getElementById(b.dataset.target).textContent;

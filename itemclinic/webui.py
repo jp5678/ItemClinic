@@ -98,7 +98,7 @@ def upload_page(footer: str) -> str:
 <input type="text" name="exam_id" placeholder="예: 성인간호학 중간고사">
 <label>과목명 <span class="hint">(선택 — 개선 문항 생성에 사용)</span></label>
 <input type="text" name="subject" placeholder="예: 성인간호학">
-<label>응답 파일 (CSV 또는 엑셀)</label>
+<label>응답 파일 (문항분석표: xlsx 또는 csv)</label>
 <input type="file" name="csv" accept=".csv,.xlsx,.xlsm" required>
 <p class="hint">KEY 행 + 원 응답(A~E) 또는 0/1 채점 행렬 · 빈 셀은 오답 처리</p>
 <label>상단 제외 행 수 <span class="hint">(CSV·엑셀 공통 — 1~7행 제목 영역이면 7)</span></label>

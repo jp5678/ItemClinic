@@ -95,6 +95,21 @@ class TestServer:
         assert "2026-1-성인간호학-중간고사" in page
         assert list((tmp_path / "out").glob("2026-1-성인간호학-중간고사_*"))
 
+    def test_subject_included_in_exam_id(self, server):
+        body = multipart_body(
+            {"exam_id": "기말고사", "subject": "디지털리터러시와 AI활용",
+             "year": "2026", "semester": "1학기", "exam_type": "기말고사",
+             "skip_rows": "0"},
+            {"csv": ("r.csv", CSV_CONTENT.encode())},
+        )
+        status, page = request(
+            server, "POST", "/analyze", body=body,
+            headers={"Content-Type": f"multipart/form-data; boundary={BOUNDARY}",
+                     "Content-Length": str(len(body))},
+        )
+        assert status == 200
+        assert "2026-1-디지털리터러시와-AI활용-기말고사" in page
+
     def test_summary_subject_not_double_prefixed(self, server, monkeypatch):
         # 문항 분석표에서 과목명을 자동 사용할 때 학년도 접두어를 중복으로 안 붙임
         openpyxl = pytest.importorskip("openpyxl")

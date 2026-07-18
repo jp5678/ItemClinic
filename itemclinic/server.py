@@ -83,9 +83,13 @@ class _Handler(BaseHTTPRequestHandler):
             raise LoadError("응답 파일(CSV 또는 엑셀)을 선택해 주세요.")
         exam_type = parts["exam_type"].value.strip() if "exam_type" in parts else "일반"
         exam_name = _field(parts, "exam_id")
-        term = _term_prefix(_field(parts, "year"), _field(parts, "semester"))
-        exam_id = _clean_exam_id(f"{term} {exam_name}".strip() or "무제시험")
         subject = _field(parts, "subject")
+        term = _term_prefix(_field(parts, "year"), _field(parts, "semester"))
+        # 시험 이름 = 학년도-학기 + 과목명 + 입력 이름 (과목명이 이름에 이미 있으면 중복 생략)
+        name_parts = ([exam_name] if exam_name and subject and subject in exam_name
+                      else [p for p in (subject, exam_name) if p])
+        composed = f"{term} {' '.join(name_parts)}".strip() if name_parts else ""
+        exam_id = _clean_exam_id(composed or "무제시험")
         skip_rows = _parse_skip_rows(parts.get("skip_rows"))
         item_texts = _parse_items(parts.get("items"))
         # API 키는 이 요청의 개선안 생성에만 쓰고 저장·로깅하지 않는다
@@ -104,7 +108,7 @@ class _Handler(BaseHTTPRequestHandler):
         if intake.kind == "summary":
             return self._handle_summary(
                 intake.summary, exam_id, exam_type, subject, out_dir, api_key,
-                exam_id_given=bool(exam_name),
+                exam_id_given=bool(exam_name or subject),
             )
         result = analyze_exam(intake.responses, profile)
 
