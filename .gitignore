@@ -1,0 +1,19 @@
+# 분석 결과·학생 데이터 — 절대 커밋하지 않음
+web_analyses/
+item_bank.json
+examples/item_bank.json
+examples/*_analysis/
+examples/title_check/
+
+# Python
+__pycache__/
+*.pyc
+.coverage
+.pytest_cache/
+
+# bkit 메타데이터
+docs/.pdca-status.json
+docs/.bkit-memory.json
+
+# macOS
+.DS_Store

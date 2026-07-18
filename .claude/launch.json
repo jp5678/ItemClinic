@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "itemclinic-web",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "itemclinic", "serve", "--port", "8765", "--out", "web_analyses", "--bank", "item_bank.json"],
+      "port": 8765
+    }
+  ]
+}
