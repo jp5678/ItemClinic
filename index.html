@@ -78,6 +78,19 @@ th{background:var(--soft);color:var(--primary-dark)}
  margin-top:16px;font-size:.95rem;display:none}
 pre{white-space:pre-wrap;font-size:.85rem}
 .footer-note{color:var(--muted);font-size:.85rem;text-align:center;margin-top:40px}
+.toolbar{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-bottom:14px}
+.tb{padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:#fff;
+ color:var(--primary);font-weight:700;font-size:.9rem;cursor:pointer}
+.tb:hover{background:var(--soft)}
+@media print{
+ .side,footer,.toolbar,.no-print,#welcome{display:none!important}
+ body{background:#fff!important}
+ main{padding:0}
+ .layout{display:block;max-width:none}
+ .hero,.item{box-shadow:none;border:1px solid #cbd5e1;break-inside:avoid}
+ .overflow{overflow:visible}
+ *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -429,9 +442,97 @@ function renderReport(res,examId,examType,prompt,improved,improveError,subject){
  else if(improveError)extras+=`<h2>Claude 개선안</h2><div class="item"><div class="flag warn">자동 생성에 실패했습니다: ${esc(improveError)} 아래 개선 프롬프트를 복사해 Claude에 직접 붙여넣어 주세요.</div></div>`;
  if(prompt)extras+=`<h2>개선 프롬프트 ${copyBtn("ic-prompt")}</h2><div class="item"><p class="meta">복사해서 Claude(claude.ai)에 붙여넣으면 원인 해석과 대체 문항 초안을 받을 수 있습니다.</p><details><summary>펼쳐 보기</summary><pre id="ic-prompt">${esc(prompt)}</pre></details></div>`;
  else extras+=`<p class="meta" style="text-align:center">주의·불량 문항이 없어 개선 프롬프트를 생성하지 않았습니다.</p>`;
- return `${hero}<h2>문항 통계 요약</h2><div class="overflow"><table><thead>${tableHead}</thead><tbody>${rowsHtml}</tbody></table></div>
+ const toolbar=`<div class="toolbar"><span class="meta">리포트 저장:</span>
+  <button type="button" class="tb" id="dl-pdf" title="브라우저 인쇄 대화상자에서 'PDF로 저장'을 선택하세요">PDF</button>
+  <button type="button" class="tb" id="dl-docx">DOCX</button>
+  <button type="button" class="tb" id="dl-json">JSON</button></div>`;
+ return `${toolbar}${hero}<h2>문항 통계 요약</h2><div class="overflow"><table><thead>${tableHead}</thead><tbody>${rowsHtml}</tbody></table></div>
   <h2>문항별 상세 진단</h2>${sections}${extras}
   <p class="footer-note">ItemClinic — 모든 계산은 이 브라우저 안에서 수행되었습니다</p>`;}
+
+/* ============ 다운로드 (PDF·DOCX·JSON) ============ */
+function buildDiagnosisJson(res,examId,examType){
+ const round=(v,d)=>v==null?null:Math.round(v*10**d)/10**d;
+ if(res.kind==="summary"){const m=res.meta;
+  return JSON.stringify({exam_id:examId,exam_type:examType,format:"summary",
+   department:m.department??null,subject:m.subject??null,exam_date:m.examDate??null,
+   n_students:m.n?Number(m.n):null,mean:m.mean?Number(m.mean):null,
+   sd:m.sd?Number(m.sd):null,overall_p:m.overallP??null,
+   items:res.items.map(it=>({number:it.num,item_type:it.type||null,key:it.key||null,
+    top_wrong:it.topWrong||null,difficulty:round(it.p,3),point_biserial:round(it.st.r,3),
+    difficulty_label:it.diffLabel||null,
+    option_rates:Object.fromEntries(it.rates.map(([o,r])=>[o,round(r,3)])),
+    severity:["OK","WARNING","CRITICAL"][it.sev],flags:it.flags.map(f=>f[1])}))},null,2);}
+ return JSON.stringify({exam_id:examId,exam_type:examType,format:"responses",
+  n_students:res.n,n_items:res.k,kr20:round(res.kr20,4),
+  mean_score:round(res.mean,2),sd_score:round(res.sd,3),
+  items:res.items.map(it=>({item_id:it.id,difficulty:round(it.st.p,3),
+   point_biserial:round(it.st.r,3),upper_lower:round(it.st.ul,3),
+   kr20_if_deleted:round(it.st.kr20Del,4),
+   severity:["OK","WARNING","CRITICAL"][it.sev],flags:it.flags.map(f=>f[1]),
+   icc:it.icc.map(g=>round(g.p,3))}))},null,2);}
+
+const TDS='border:1px solid #999;padding:4px 8px;text-align:center;font-size:10pt';
+const THS=TDS+';background:#e3eef9;font-weight:bold';
+function wrow(cells,styles){return "<tr>"+cells.map((c,i)=>`<td style="${styles||TDS}${i===1?';text-align:left':''}">${esc(c)}</td>`).join("")+"</tr>";}
+function buildWordHtml(res,examId,examType,prompt,improved){
+ const sevName=s=>["정상","주의","불량"][s];
+ let head,rows,detail;
+ if(res.kind==="summary"){const m=res.meta;
+  head="<tr>"+["문항","유형","정답","정답률 p","변별도","난이도","판정"].map(h=>`<td style="${THS}">${h}</td>`).join("")+"</tr>";
+  rows=res.items.map(it=>wrow([it.num,it.type||"-",it.key||"-",it.p.toFixed(2),it.st.r.toFixed(2),it.diffLabel||"-",sevName(it.sev)])).join("");
+  detail=res.items.filter(it=>it.sev>0).map(it=>
+   `<h3>${esc(it.num)}번 문항 [${sevName(it.sev)}]</h3>
+    <p>${it.type?"유형: "+esc(it.type)+"<br>":""}정답 ${esc(it.key||"-")}번 · 정답률 p=${it.p.toFixed(2)} · 변별도 r=${it.st.r.toFixed(2)} · 최다오답 ${esc(it.topWrong||"-")}번<br>답지반응률: ${it.rates.map(([o,r])=>o+"번 "+(r*100).toFixed(0)+"%").join(", ")}</p>
+    <ul>${it.flags.map(f=>"<li>"+esc(f[1])+"</li>").join("")}</ul>`).join("");
+  var overview=`<p>응시인원 ${esc(m.n||"-")}명 · 전체평균 ${esc(m.mean||"-")} · 표준편차 ${esc(m.sd||"-")} · 전체 정답률 ${m.overallP!=null?(m.overallP*100).toFixed(1)+"%":"-"}${m.department?" · "+esc(m.department):""}${m.examDate?" · 시험일 "+esc(m.examDate):""}</p>
+   <p>※ 요약 분석표 기반이므로 KR-20 신뢰도와 문항특성곡선(ICC)은 산출하지 않음.</p>`;
+ }else{
+  head="<tr>"+["문항","난이도 p","변별도 r","상하위 D","삭제 시 KR-20","판정"].map(h=>`<td style="${THS}">${h}</td>`).join("")+"</tr>";
+  rows=res.items.map(it=>wrow([it.id,it.st.p.toFixed(2),it.st.r.toFixed(2),it.st.ul.toFixed(2),it.st.kr20Del!=null?it.st.kr20Del.toFixed(3):"-",sevName(it.sev)])).join("");
+  detail=res.items.filter(it=>it.sev>0).map(it=>
+   `<h3>${esc(it.id)} [${sevName(it.sev)}]</h3>
+    <p>난이도 p=${it.st.p.toFixed(2)} · 변별도 r=${it.st.r.toFixed(2)} · 상하위 D=${it.st.ul.toFixed(2)}<br>ICC(하위→상위): ${it.icc.map(g=>(g.p*100).toFixed(0)+"%").join(" → ")}${it.dist?"<br>선택지(전체/상위/하위): "+it.dist.map(d=>d.o+(d.isKey?"✓":"")+" "+(d.all*100).toFixed(0)+"%/"+(d.up*100).toFixed(0)+"%/"+(d.lo*100).toFixed(0)+"%").join(", "):""}</p>
+    <ul>${it.flags.map(f=>"<li>"+esc(f[1])+"</li>").join("")}</ul>`).join("");
+  var overview=`<p>응시인원 ${res.n}명 · ${res.k}문항 · KR-20 신뢰도 ${res.kr20.toFixed(3)} · 평균 ${res.mean.toFixed(1)} · 표준편차 ${res.sd.toFixed(2)}</p>`;
+ }
+ return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="font-family:'맑은 고딕',sans-serif">
+<h1>문항분석 리포트</h1>
+<p><b>${esc(examId)}</b> (${esc(examType)}) · ItemClinic · 생성 ${new Date().toLocaleString("ko-KR")}</p>
+<h2>검사 개요</h2>${overview}
+<h2>문항 통계 요약</h2>
+<table style="border-collapse:collapse">${head}${rows}</table>
+<h2>문항별 상세 진단 (주의·불량 문항)</h2>${detail||"<p>주의·불량 문항 없음.</p>"}
+${improved?`<h2>Claude 개선안</h2><pre style="white-space:pre-wrap;font-size:10pt">${esc(improved)}</pre>`:""}
+${prompt?`<h2>개선 프롬프트</h2><pre style="white-space:pre-wrap;font-size:10pt">${esc(prompt)}</pre>`:""}
+<p style="color:#888">ItemClinic — 시험 문항 자동 분석 및 불량문항 진단 시스템 · 청암대학교 간호학과</p>
+</body></html>`;}
+
+function downloadBlob(blob,filename){const a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);
+ a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);}
+function safeName(s){return s.replace(/[\\/:*?"<>|\s]+/g,"-").slice(0,60);}
+function loadScript(src){return new Promise((ok,err)=>{const s=document.createElement("script");
+ s.src=src;s.onload=ok;s.onerror=()=>err(new Error("load fail"));document.head.appendChild(s);});}
+
+function attachDownloadHandlers(state){
+ document.getElementById("dl-json").addEventListener("click",()=>{
+  downloadBlob(new Blob([buildDiagnosisJson(state.res,state.examId,state.examType)],
+   {type:"application/json"}),safeName(state.examId)+"_진단데이터.json");});
+ document.getElementById("dl-pdf").addEventListener("click",()=>{
+  const old=document.title;document.title=safeName(state.examId)+"_문항분석리포트";
+  document.querySelectorAll("#result details").forEach(d=>d.open=true);
+  window.print();document.title=old;});
+ document.getElementById("dl-docx").addEventListener("click",async()=>{
+  const html=buildWordHtml(state.res,state.examId,state.examType,state.prompt,state.improved);
+  const base=safeName(state.examId)+"_문항분석리포트";
+  try{
+   if(!window.htmlDocx)await loadScript("https://unpkg.com/html-docx-js@0.3.1/dist/html-docx.js");
+   downloadBlob(window.htmlDocx.asBlob(html),base+".docx");
+  }catch(e){ // 라이브러리 로드 실패 시 Word가 열 수 있는 .doc(HTML)로 대체
+   downloadBlob(new Blob(["﻿"+html],{type:"application/msword"}),base+".doc");
+  }});}
 
 /* ============ 폼 초기화·이벤트 ============ */
 (function init(){
@@ -475,6 +576,7 @@ document.getElementById("run").addEventListener("click",async()=>{
   resDiv.innerHTML=renderReport(res,examId,examType,prompt,improved,improveError,subject);
   document.getElementById("welcome").style.display="none";
   resDiv.style.display="block";
+  attachDownloadHandlers({res,examId,examType,prompt,improved});
   resDiv.querySelectorAll(".copy-btn").forEach(b=>{const icon=b.innerHTML;
    b.addEventListener("click",()=>{const t=document.getElementById(b.dataset.target).textContent;
     const done=()=>{b.classList.add("done");b.innerHTML="✓";setTimeout(()=>{b.classList.remove("done");b.innerHTML=icon;},1500);};

@@ -15,6 +15,10 @@
 
 <img src="qr-itemclinic.png" alt="배포 페이지 QR" width="150"> ← 배포 페이지 QR
 
+**리포트 내보내기(정적 웹)**: 리포트 상단 툴바에서 PDF(인쇄 CSS + `window.print`),
+DOCX(html-docx-js CDN — 로드 실패 시 Word HTML `.doc` 폴백), JSON(진단 데이터
+직렬화 — Python `serialize.py`와 동일 스키마) 다운로드 지원.
+
 > **이중 구현 주의**: 진단 규칙·프로파일·파서를 수정할 때는 Python(`itemclinic/`)과
 > 정적 웹(`index.html`)을 **양쪽 모두** 고쳐야 한다. 문항은행은 Python 버전에만 있다.
 
